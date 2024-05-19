@@ -1,9 +1,68 @@
 #version 330 core
 
-in vec4 inColor;
-
 out vec4 FragColor;
+in vec3 fragCoord;
+
+uniform vec2 Resolution;
+uniform float Time;
+
+// Function to calculate distance from a point to a sphere
+float sphereSDF(vec3 point, vec3 center, float radius) {
+    return length(point - center) - radius;
+}
+
+float cubeSDF(vec3 point, vec3 size) {
+    vec3 q = abs(point) - size;
+    return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+const int MAX_STEPS = 100;
+const float MAX_DISTANCE = 100.0;
+// The distance to an object that is considered a hit
+const float SURFACE_DIST = 0.001;
+// FOV constant
+const float FOV = 0.7;
+
+float scene(vec3 p) {
+    return sphereSDF(p, vec3(0), 1.0);
+}
+
+// The ray marching magic happens here
+vec4 rayMarch(vec3 ro, vec3 rd) {
+    float totalDistance = 0.0;
+    vec3 color = vec3(0.0);
+
+    for (int i = 0; i < MAX_STEPS; ++i) {
+        vec3 p = ro + rd * totalDistance;
+
+        float d = scene(p);
+
+        totalDistance += d;
+
+        if (d < SURFACE_DIST || totalDistance > MAX_DISTANCE) break;
+    }
+
+    color = vec3(totalDistance * .2);
+
+    return vec4(color, 1.0);
+
+//    if (totalDistance > MAX_DISTANCE) {
+//        return vec4(0.0);
+//    } else {
+//            return vec4(0.7);
+//    }
+
+    // return vec4(0.0);
+}
 
 void main() {
-    FragColor = inColor; // vec4(1.0, 0.5, 0.2, 1.0);
+    vec2 uv = (gl_FragCoord.xy * 2. - Resolution.xy) / Resolution.y; //  (2.0 * gl_FragCoord.xy - Resolution) / min(Resolution.x, Resolution.y); // fragCoord.xy / Resolution * 2.0 - 1.0;
+    // uv.x *= Resolution.x / Resolution.y;
+
+    vec3 rayOrigin = vec3(0.0, 0.0, -3.0);
+    vec3 rayDirection = normalize(vec3(uv * FOV, 1.0));
+
+    vec4 color = rayMarch(rayOrigin, rayDirection);
+
+    FragColor = color; // vec4(fragCoord, 1.0); // vec4(1.0, 0.5, 0.2, 1.0);
 }
