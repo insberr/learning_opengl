@@ -7,6 +7,11 @@
 #include <sstream>
 #include <string>
 
+const int particlesWidth = 32;
+const int particlesHeight = 32;
+const int particlesDepth = 32;
+unsigned int particlesData[particlesWidth][particlesHeight][particlesDepth];
+
 // Loads contents of shader file into a string
 std::string readShaderFile(const std::string& filePath) {
     std::ifstream file(filePath);
@@ -57,6 +62,17 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
 }
 
 int main() {
+    // Init particles data
+    for (unsigned x = 0; x < particlesWidth; ++x) {
+        for (unsigned y = 0; y < particlesHeight; ++y) {
+            for (unsigned z = 0; z < particlesDepth; ++z)
+            {
+                particlesData[x][y][z] = 1;
+            }
+        }
+    }
+
+
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
@@ -126,6 +142,22 @@ int main() {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindVertexArray(0);
 
+    // Init particles "texture"
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    // Specify texture parameters
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    // Upload the data to the 3D texture
+    glTexImage3D(GL_TEXTURE_3D, 0, GL_R32UI, particlesWidth, particlesHeight, particlesDepth, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, particlesData);
+    // Unbind the texture
+    glBindTexture(GL_TEXTURE_3D, 0);
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
         // Render here
@@ -145,6 +177,12 @@ int main() {
         xpos = std::ranges::clamp(xpos, 0.0, static_cast<double>(width));
         ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
         glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xpos), static_cast<float>(ypos));
+
+        // Bind texture
+        glActiveTexture(GL_TEXTURE3);
+        glBindTexture(GL_TEXTURE_3D, textureID);
+        // Set the uniform
+        glUniform1i(glGetUniformLocation(shaderProgram, "particles"), 1);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
