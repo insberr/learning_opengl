@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
@@ -137,6 +138,13 @@ int main() {
         glfwGetFramebufferSize(window, &width, &height);
         glUniform2f(glGetUniformLocation(shaderProgram, "Resolution"), width, height);
         glUniform1f(glGetUniformLocation(shaderProgram, "Time"), glfwGetTime());
+
+        // Get the mouse position
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        xpos = std::ranges::clamp(xpos, 0.0, static_cast<double>(width));
+        ypos = std::ranges::clamp(ypos, 0.0, static_cast<double>(height));
+        glUniform2f(glGetUniformLocation(shaderProgram, "Mouse"), static_cast<float>(xpos), static_cast<float>(ypos));
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
