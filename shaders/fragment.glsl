@@ -21,10 +21,17 @@ const float MAX_DISTANCE = 100.0;
 // The distance to an object that is considered a hit
 const float SURFACE_DIST = 0.001;
 // FOV constant
-const float FOV = 0.7;
+const float FOV = 1.0;
 
 float scene(vec3 p) {
-    return sphereSDF(p, vec3(0), 1.0);
+    vec3 spherePos = vec3(sin(Time) * 3.0, 0, 0.0);
+    float sphere = sphereSDF(p, spherePos, 1.0);
+
+    float cube = cubeSDF(p, vec3(.75));
+
+    float ground = p.y + .75;
+
+    return min(ground, min(sphere, cube));
 }
 
 // The ray marching magic happens here
@@ -39,9 +46,13 @@ vec4 rayMarch(vec3 ro, vec3 rd) {
 
         totalDistance += d;
 
+        // Color based on iteration count
+        // color = vec3(i) / MAX_STEPS;
+
         if (d < SURFACE_DIST || totalDistance > MAX_DISTANCE) break;
     }
 
+    // Color based on depth
     color = vec3(totalDistance * .2);
 
     return vec4(color, 1.0);
